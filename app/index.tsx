@@ -27,37 +27,50 @@ export default function App() {
     console.log('Mensagem do WebView:', message);
   };
 
-  // HTML otimizado para simplesmente exibir o widget dentro do contêiner do WebView.
+  // HTML com viewport corrigido para escala correta.
   const htmlContent = `
   <!DOCTYPE html>
   <html lang="pt-br">
   <head>
     <meta charset="UTF-8" />
+    
+    {/* Viewport padrão para garantir que o conteúdo não seja reduzido (zoom out) */}
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+    
     <title>VLibras</title>
     <style>
-      body {
+      body, html {
         margin: 0;
         padding: 0;
         overflow: hidden;
+        width: 100%;
+        height: 100%;
       }
       
-      /* Oculta o elemento que serve apenas como fonte para o VLibras ler o texto */
       #textoInvisivelParaTraducao {
           display: none;
       }
 
-      /* Esconde o botão flutuante padrão */
       [vw-access-button] {
         display: none !important;
+      }
+
+      /* O wrapper do widget preenche 100% da tela do WebView */
+      .vw-plugin-top-wrapper {
+        width: 100% !important;
+        height: 100% !important;
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        transform: none !important;
+        box-shadow: none !important;
+        border-radius: 0 !important;
       }
     </style>
   </head>
   <body>
-    <!-- Elemento invisível que o VLibras usará para ler o texto -->
     <div id="textoInvisivelParaTraducao" vw-access>Aguardando texto...</div>
 
-    <!-- Container do VLibras -->
     <div vw class="enabled">
       <div vw-access-button></div>
       <div vw-plugin-wrapper></div>
@@ -69,17 +82,15 @@ export default function App() {
         const log = (msg) => window.ReactNativeWebView.postMessage(msg);
         new window.VLibras.Widget('https://vlibras.gov.br/app');
 
-        // Função global que será chamada pelo React Native
         window.traduzirTexto = function(novoTexto) {
           const el = document.getElementById('textoInvisivelParaTraducao');
           if (el) {
             el.textContent = novoTexto;
-            el.click(); // Aciona a tradução do VLibras
+            el.click();
             log('Tradução acionada.');
           }
         };
 
-        // Abre o widget automaticamente
         window.addEventListener('load', () => {
           log('WebView carregado. Abrindo o widget...');
           setTimeout(() => {
@@ -100,11 +111,9 @@ export default function App() {
       return;
     }
     
-    // Se o WebView ainda não estiver visível, mostre-o.
     if (!showWebView) {
       setShowWebView(true);
     } else {
-      // Se já estiver visível, apenas injeta o novo texto.
       injectTranslation();
     }
   };
@@ -113,7 +122,6 @@ export default function App() {
   const injectTranslation = () => {
       if(webViewRef.current) {
         const textoEscapado = texto.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, '\\n');
-        // CORREÇÃO: Removido o caractere de escape inválido antes do template literal
         const js = `window.traduzirTexto('${textoEscapado}'); true;`;
         webViewRef.current.injectJavaScript(js);
       }
@@ -126,46 +134,45 @@ export default function App() {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={{ flex: 1 }}
       >
-        <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
-          <View style={styles.uiContainer}>
-            <Text style={styles.header}>VLibras no App</Text>
-            <View style={styles.inputContainer}>
-              <TextInput
-                style={styles.input}
-                value={texto}
-                onChangeText={setTexto}
-                placeholder="Digite o texto para traduzir"
-                multiline
-              />
-              <Button title="Traduzir" onPress={handleTraduzir} />
-            </View>
-
-            {/* O WebView só é renderizado após o primeiro clique em "Traduzir" */}
-            {showWebView && (
-              <View style={styles.webviewContainer}>
-                {isWebViewLoading && (
-                  <ActivityIndicator size="large" style={styles.webviewLoading} />
-                )}
-                <WebView
-                  ref={webViewRef}
-                  originWhitelist={['*']}
-                  source={{ html: htmlContent }}
-                  javaScriptEnabled
-                  domStorageEnabled
-                  onLoadStart={() => setIsWebViewLoading(true)}
-                  onLoadEnd={() => {
-                    setIsWebViewLoading(false);
-                    // Injeta a tradução assim que o WebView termina de carregar
-                    injectTranslation();
-                  }}
-                  onMessage={onWebViewMessage}
-                  style={styles.webview}
-                  onError={(e) => Alert.alert('Erro no WebView', e.nativeEvent.description || 'Ocorreu um erro')}
-                />
-              </View>
-            )}
+        <View style={styles.innerContainer}>
+          <Text style={styles.header}>VLibras no App</Text>
+          <View style={styles.inputContainer}>
+            <TextInput
+              style={styles.input}
+              value={texto}
+              onChangeText={setTexto}
+              placeholder="Digite o texto para traduzir"
+              multiline
+            />
+            <Button title="Traduzir" onPress={handleTraduzir} />
           </View>
-        </ScrollView>
+
+          {showWebView && (
+            <View style={styles.webviewContainer}>
+              {isWebViewLoading && (
+                <View style={styles.loadingOverlay}>
+                  <ActivityIndicator size="large" color="#007AFF" />
+                </View>
+              )}
+              <WebView
+                ref={webViewRef}
+                originWhitelist={['*']}
+                source={{ html: htmlContent }}
+                javaScriptEnabled
+                domStorageEnabled
+                onLoadStart={() => setIsWebViewLoading(true)}
+                onLoadEnd={() => {
+                  setIsWebViewLoading(false);
+                  injectTranslation();
+                }}
+                onMessage={onWebViewMessage}
+                style={styles.webview}
+                onError={(e) => Alert.alert('Erro no WebView', e.nativeEvent.description || 'Ocorreu um erro')}
+                scrollEnabled={false} // Desativa o scroll do webview
+              />
+            </View>
+          )}
+        </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -177,15 +184,16 @@ const styles = StyleSheet.create({
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
     backgroundColor: '#f0f2f5',
   },
-  uiContainer: {
-    padding: 20,
+  innerContainer: {
     flex: 1,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
   },
   header: {
     fontSize: 24,
     fontWeight: 'bold',
     textAlign: 'center',
-    marginVertical: 20,
+    paddingVertical: 20,
   },
   inputContainer: {
     marginBottom: 20,
@@ -202,24 +210,21 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   webviewContainer: {
-    height: 400, // Altura fixa para a área do tradutor
+    flex: 1, // Faz o container expandir para preencher o espaço restante
     borderWidth: 1,
     borderColor: '#ccc',
     borderRadius: 8,
-    overflow: 'hidden', // Garante que o WebView respeite as bordas
-    backgroundColor: '#fff', // Cor de fundo enquanto o WebView carrega
+    overflow: 'hidden',
+    backgroundColor: '#fff', 
   },
   webview: {
     flex: 1,
-    opacity: 0.99, // Pequeno truque para evitar alguns bugs de renderização no Android
+    opacity: 0.99, // Workaround para alguns bugs de renderização no Android
   },
-  webviewLoading: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
     justifyContent: 'center',
     alignItems: 'center',
+    zIndex: 1,
   }
 });
