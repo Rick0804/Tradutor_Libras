@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+  <head>
+    <meta charset="UTF-8" />
+    <title>VLibras base64 com botão</title>
+  </head>
+  <body>
+    <div vw class="enabled">
+      <div vw-access-button class="active"></div>
+      <div vw-plugin-wrapper>
+        <div class="vw-plugin-top-wrapper"></div>
+      </div>
+    </div>
+
+    <script src="https://vlibras.gov.br/app/vlibras-plugin.js"></script>
+    <script>
+      let widget;
+
+      window.onload = () => {
+        widget = new window.VLibras.Widget('https://vlibras.gov.br/app');
+      };
+
+      // Expo envia mensagens por WebView.postMessage (RN usa "message")
+      document.addEventListener("message", (event) => {
+        if (event.data === "abrir-vlibras" && widget) {
+          widget.open();
+        }
+      });
+
+      // Suporte para Android mais novo (WebKit)
+      window.addEventListener("message", (event) => {
+        if (event.data === "abrir-vlibras" && widget) {
+          widget.open();
+        }
+      });
+    </script>
+  </body>
+</html>
