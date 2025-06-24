@@ -1,30 +1,17 @@
 import React, { useRef, useState } from 'react';
-import { 
-  View, 
-  TouchableOpacity,
-  StyleSheet, 
-  Text, 
-  TextInput, 
-  ActivityIndicator, 
-  Alert, 
-  SafeAreaView, 
-  StatusBar,
-  Platform,
-  KeyboardAvoidingView,
-  ScrollView
-} from 'react-native';
+import { View, TouchableOpacity, StyleSheet, Text, TextInput, ActivityIndicator, Alert,SafeAreaView, StatusBar, Platform, KeyboardAvoidingView, ScrollView } from 'react-native';
 import { WebView } from 'react-native-webview';
 
 export default function App() {
   const webViewRef = useRef(null);
   const [texto, setTexto] = useState('');
-  
-  const [showWebView, setShowWebView] = useState(true); 
-  const [isWebViewLoading, setIsWebViewLoading] = useState(true); 
+
+  const [showWebView, setShowWebView] = useState(true);
+  const [isWebViewLoading, setIsWebViewLoading] = useState(true);
 
   const onWebViewMessage = (event) => {
     const message = event.nativeEvent.data;
-    console.log('Mensagem do WebView:', message);
+    console.log('WebView Message:', message);
   };
 
   const htmlContent = `
@@ -69,22 +56,23 @@ export default function App() {
        
         window.alert = function() {};
       (function() {
-        const log = (msg) => window.ReactNativeWebView.postMessage(msg);
-        new window.VLibras.Widget('https://vlibras.gov.br/app');
+        const log = (msg) => window.ReactNativeWebView.postMessage(msg)
+        new window.VLibras.Widget('https://vlibras.gov.br/app')
         window.traduzirTexto = function(novoTexto) {
-          const el = document.getElementById('textoInvisivel');
+          const el = document.getElementById('textoInvisivel')
+          console.log('teste message: ', msg);
           if (el) {
-            el.textContent = novoTexto;
+            el.textContent = novoTexto
             el.click();
-            log('Tradução acionada.');
+            log('Tradução acionada.')
           }
         };
         window.addEventListener('load', () => {
-          log('WebView carregado. Abrindo o widget...');
+          log('WebView carregado. Abrir: ')
           setTimeout(() => {
-            const accessButton = document.querySelector('[vw-access-button]');
-            if (accessButton) accessButton.click();
-          }, 500);
+            const accessButton = document.querySelector('[vw-access-button]')
+            if (accessButton) accessButton.click()
+          }, 500)
         });
       })();
     </script>
@@ -93,36 +81,37 @@ export default function App() {
   `;
 
   const injectTranslation = () => {
-      if(webViewRef.current) {
-        const textoEscapado = texto.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, '\\n');
-        const js = `window.traduzirTexto('${textoEscapado}'); true;`;
-        webViewRef.current.injectJavaScript(js);
-      }
+    if (webViewRef.current) {
+      const textoEscapado = texto.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, '\\n');
+      const js = `window.traduzirTexto('${textoEscapado}'); true;`;
+      console.log('texto: ', textoEscapado)
+      webViewRef.current.injectJavaScript(js);
+    }
   };
 
   const handleTraduzir = () => {
     if (!texto.trim()) {
-      Alert.alert('Aviso', 'Por favor, digite um texto para traduzir.');
+      Alert.alert('Alerta', 'Digite um texto para traduzir.');
       return;
     }
     injectTranslation();
   };
-  
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
-      <KeyboardAvoidingView 
+      <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.keyboardAvoidingContainer}
       >
         <View style={styles.innerContainer}>
-          <Text style={styles.header}>Tradutor para <Text style={styles.headerHighlight}>LIBRAS</Text></Text>
+          <Text style={styles.header}>Tradutor para LIBRAS</Text>
           <View style={styles.card}>
             <TextInput
               style={styles.input}
               value={texto}
               onChangeText={setTexto}
-              placeholder="Escreva aqui..."
+              placeholder="Escreva aqui:"
               placeholderTextColor="#9ca3af"
               multiline
             />
@@ -148,7 +137,7 @@ export default function App() {
                 onLoadEnd={() => setIsWebViewLoading(false)}
                 onMessage={onWebViewMessage}
                 style={styles.webview}
-                onError={() => {}}
+                onError={() => { }}
                 scrollEnabled={false}
               />
             </View>
@@ -163,13 +152,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
-    backgroundColor: '#f3f4f6', 
+    backgroundColor: '#f3f4f6',
   },
   keyboardAvoidingContainer: {
     flex: 1,
   },
   innerContainer: {
-    flex: 1, 
+    flex: 1,
     paddingHorizontal: 20,
     paddingBottom: 20,
   },
@@ -194,7 +183,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     borderRadius: 16,
     padding: 20,
-    marginBottom: 20, 
+    marginBottom: 20,
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
@@ -237,12 +226,12 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   webviewContainer: {
-    flex: 1, 
+    flex: 1,
     width: '65%',
     alignSelf: 'center',
     borderRadius: 16,
     overflow: 'hidden',
-    backgroundColor: '#fff', 
+    backgroundColor: '#fff',
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
@@ -256,7 +245,7 @@ const styles = StyleSheet.create({
   webview: {
     flex: 1,
     opacity: 0.99,
-    
+
   },
   loadingOverlay: {
     ...StyleSheet.absoluteFillObject,
